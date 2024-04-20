@@ -3,6 +3,7 @@ import redisClient from "@configs/redis.config";
 import { compareUrls, createLongUrl } from "@util/util";
 import express from "express";
 import type { Request, Response } from "express";
+import querystring from 'querystring';
 
 const PORT = ENV.PORT;
 const app = express();
@@ -14,33 +15,15 @@ app.get("/", async (req: Request, res: Response) => {
 });
 
 app.get("/:url", async (req: Request, res: Response) => {
-  const longUrl = req.params.url;
+  const hashedUrl = req.originalUrl.split('/')[1];
 
-  const originalUrl = await redisClient.get(longUrl);
+  const originalUrl = await redisClient.get(hashedUrl);
 
   if (!originalUrl) {
-    return res.status(404).json({ message: "Url not found" });
+    return res.status(404).json({ message: "URL not found" });
   }
 
-  return res.status(200).json({message: originalUrl})
-
-  // compareUrls(
-  //   originalUrl,
-  //   "$2a$10$co90mIVIeBfS0Vq1x2F4Ju2BUQhHXQZQ6bOj/.FmSNTPL9MecW6iG",
-  //   (error, match) => {
-  //     if (error) {
-  //       console.error("Error:", error);
-  //     } else {
-  //       if (match) {
-  //         console.log("URLs match");
-  //       } else {
-  //         console.log("URLs do not match");
-  //       }
-  //     }
-  //   }
-  // );
-
-
+  return res.status(200).json({ message: JSON.parse(originalUrl) });
 });
 
 app.post("/createurl", async (req: Request, res: Response) => {
