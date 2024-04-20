@@ -14,32 +14,55 @@ app.get("/", async (req: Request, res: Response) => {
 });
 
 app.get("/:url", async (req: Request, res: Response) => {
-  const originalUrl = req.params.url;
+  const longUrl = req.params.url;
 
-  compareUrls(
-    "https://www.example.com",
-    "$2a$10$co90mIVIeBfS0Vq1x2F4Ju2BUQhHXQZQ6bOj/.FmSNTPL9MecW6iG",
-    (error, match) => {
-      if (error) {
-        console.error("Error:", error);
-      } else {
-        if (match) {
-          console.log("URLs match");
-        } else {
-          console.log("URLs do not match");
-        }
-      }
-    }
-  );
+  const originalUrl = await redisClient.get(longUrl);
 
-  createLongUrl("https://www.example.com", (error, longUrl) => {
-    if (error) console.error("Error:", error);
+  if (!originalUrl) {
+    return res.status(404).json({ message: "Url not found" });
+  }
 
-    redisClient.setEx(originalUrl, 600, JSON.stringify({ url: longUrl }));
+  return res.status(200).json({message: originalUrl})
 
-    return res.status(200).json({ url: longUrl });
-  });
+  // compareUrls(
+  //   originalUrl,
+  //   "$2a$10$co90mIVIeBfS0Vq1x2F4Ju2BUQhHXQZQ6bOj/.FmSNTPL9MecW6iG",
+  //   (error, match) => {
+  //     if (error) {
+  //       console.error("Error:", error);
+  //     } else {
+  //       if (match) {
+  //         console.log("URLs match");
+  //       } else {
+  //         console.log("URLs do not match");
+  //       }
+  //     }
+  //   }
+  // );
+
+
 });
+
+app.post("/createurl", async (req: Request, res: Response) => {
+  const originalUrl: string = req.body.url;
+
+  createLongUrl(originalUrl, (error: Error | null, longUrl?: string) => {
+    if (error) {
+      console.error("Error:", error);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+  
+    if (!longUrl) {
+      return res.status(500).json({ error: 'Failed to generate long URL' });
+    }
+
+    const encodedLongUrl = encodeURIComponent(longUrl);
+  
+    redisClient.setEx(encodedLongUrl, 600, JSON.stringify({ url: originalUrl }));
+  
+    return res.status(200).json({ url: encodedLongUrl });
+  });
+})
 
 const start = (): void => {
   try {
