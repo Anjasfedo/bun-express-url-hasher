@@ -31,11 +31,11 @@ app.post("/", async (req: Request, res: Response) => {
   createhashUrl(originalUrl, (error: Error | null, hashUrl?: string) => {
     if (error) {
       console.error("Error:", error);
-      return res.status(500).json({ error: "Internal Server Error" });
+      return res.status(500).json({ message: "Internal Server Error" });
     }
 
     if (!hashUrl) {
-      return res.status(500).json({ error: "Failed to generate long URL" });
+      return res.status(500).json({ message: "Failed to generate long URL" });
     }
 
     const encodedhashUrl = encodeURIComponent(hashUrl);
