@@ -1,6 +1,6 @@
 import ENV from "@configs/env.config";
 import redisClient from "@configs/redis.config";
-import { createLongUrl } from "@util/util";
+import { createhashUrl } from "@util/util";
 import express from "express";
 import type { Request, Response } from "express";
 
@@ -14,9 +14,9 @@ app.get("/", async (req: Request, res: Response) => {
 });
 
 app.get("/:url", async (req: Request, res: Response) => {
-  const hashedUrl = req.originalUrl.split("/")[1];
+  const hashUrl = req.originalUrl.split("/")[1];
 
-  const originalUrl = await redisClient.get(hashedUrl);
+  const originalUrl = await redisClient.get(hashUrl);
 
   if (!originalUrl) {
     return res.status(404).json({ message: "URL not found" });
@@ -28,25 +28,25 @@ app.get("/:url", async (req: Request, res: Response) => {
 app.post("/", async (req: Request, res: Response) => {
   const originalUrl: string = req.body.url;
 
-  createLongUrl(originalUrl, (error: Error | null, longUrl?: string) => {
+  createhashUrl(originalUrl, (error: Error | null, hashUrl?: string) => {
     if (error) {
       console.error("Error:", error);
       return res.status(500).json({ error: "Internal Server Error" });
     }
 
-    if (!longUrl) {
+    if (!hashUrl) {
       return res.status(500).json({ error: "Failed to generate long URL" });
     }
 
-    const encodedLongUrl = encodeURIComponent(longUrl);
+    const encodedhashUrl = encodeURIComponent(hashUrl);
 
     redisClient.setEx(
-      encodedLongUrl,
-      60 * 1,
+      encodedhashUrl,
+      60 * 10,
       JSON.stringify({ url: originalUrl })
     );
 
-    return res.status(200).json({ url: encodedLongUrl });
+    return res.status(200).json({ url: encodedhashUrl });
   });
 });
 
